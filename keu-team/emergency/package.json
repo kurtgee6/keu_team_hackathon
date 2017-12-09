@@ -1,10 +1,13 @@
 {
   "name": "emergency",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "",
   "author": "keu-team <keu-team@gmail.com>",
   "main": "functions/__main__.js",
-  "dependencies": {},
+  "dependencies": {
+    "https-post": "^0.1.1",
+    "lib": "^3.0.1"
+  },
   "private": true,
   "stdlib": {
     "build": "faaslang",
