@@ -11,6 +11,10 @@ import SVProgressHUD
 import CoreLocation
 import FirebaseAuth
 
+//protocol ClassBVCDelegate: class {
+//    func getAddressFromLatLon(pdblLatitude: Double, withLongitude pdblLongitude: Double)
+//}
+
 class HelpVC: UIViewController{
     
     //link which i have to triger https://umasiberia.lib.id/test-service@0.0.0/test_function/
@@ -18,11 +22,12 @@ class HelpVC: UIViewController{
     
     let locationManager = CLLocationManager()
     
-    var globalAddressString : String = ""
+    var lat: Double?
+    var lon: Double?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         if CLLocationManager.locationServicesEnabled() {
             locationManager.delegate = self
             locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
@@ -30,44 +35,59 @@ class HelpVC: UIViewController{
         } else {
             print("location error")
         }
-
+        
     }
     
     @IBAction func helpAction(_ sender: Any) {
-        //localhost:8170/keu-team/emergency/
+
         
-        print(globalAddressString)
         
-        let userID = Auth.auth().currentUser?.uid
-
-        let url = URL(string: "ocalhost:8170/keu-team/emergency/")
-
-        let request = NSMutableURLRequest(url: url!,
-                                          cachePolicy: .reloadIgnoringLocalCacheData,
-                                          timeoutInterval: 0.0)
-
-        request.httpMethod = "POST"
-
-        let bodyData = "userId=\(userID)&address=\(globalAddressString)"
-
-        request.httpBody = bodyData.data(using: .utf8)
-
-        let task = URLSession.shared.dataTask(with: request as URLRequest) {
-            (data, response, error) -> Void in
-
-
-            if (error != nil) {
-                print(error!)
-            } else {
-
-            }
+        guard let latHere = self.lat, let lonHere = self.lon else {
+            return
         }
-
-        task.resume()
+        
+        getAddressFromLatLon(pdblLatitude: latHere, withLongitude: lonHere)
+  
         
     }
     
-    func getAddressFromLatLon(pdblLatitude: Double, withLongitude pdblLongitude: Double, complete: @escaping (_ status: Bool) -> ()) {
+    func callHelp(address: String) {
+        
+        guard let userID = Auth.auth().currentUser?.uid else {return}
+        
+        let url = URL(string: "https://keu-team.lib.id/emergency@dev/?")
+        
+        let request = NSMutableURLRequest(url: url!,
+                                          cachePolicy: .reloadIgnoringLocalCacheData,
+                                          timeoutInterval: 0.0)
+        
+        request.httpMethod = "POST"
+        
+        
+        
+        let bodyData = "userId=\(userID)&location=\(address)"
+        
+        request.httpBody = bodyData.data(using: .utf8)
+        
+        
+        
+        let task = URLSession.shared.dataTask(with: request as URLRequest) {
+            (data, response, error) -> Void in
+            
+            
+            if (error != nil) {
+                print(error!)
+            } else {
+                
+                print("RESPONSe: \(response)")
+                
+            }
+        }
+        
+        task.resume()
+    }
+    
+    func getAddressFromLatLon(pdblLatitude: Double, withLongitude pdblLongitude: Double) {
         var center : CLLocationCoordinate2D = CLLocationCoordinate2D()
         let lat: Double = pdblLatitude
         let lon: Double = pdblLongitude
@@ -81,7 +101,6 @@ class HelpVC: UIViewController{
             {(placemarks, error) in
                 if (error != nil)
                 {
-                    complete(false)
                     print("reverse geodcode fail: \(error!.localizedDescription)")
                 }
                 let pm = placemarks! as [CLPlacemark]
@@ -110,11 +129,10 @@ class HelpVC: UIViewController{
                         addressString = addressString + pm.postalCode! + " "
                     }
                     
-                    complete(true)
-                    self.globalAddressString = addressString
-                    
                     print(addressString)
-
+                    
+                    self.callHelp(address: addressString)
+                    
                 }
                 
                 
@@ -144,7 +162,7 @@ class HelpVC: UIViewController{
 extension HelpVC : CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        SVProgressHUD.showError(withStatus: "Please allow lotation for app in the settings.")
+        SVProgressHUD.showError(withStatus: "Please allow location for app in the settings.")
         print("error:: \(error.localizedDescription)")
     }
     
@@ -157,11 +175,9 @@ extension HelpVC : CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         
         if locations.first != nil {
-            getAddressFromLatLon(pdblLatitude: (locations.first?.coordinate.latitude)!, withLongitude: (locations.first?.coordinate.longitude)!, complete: { (success) in
-                
-                
-                
-            })
+            lat =  locations.first?.coordinate.latitude
+            lon = locations.first?.coordinate.longitude
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "adressIsReady"), object: nil)
         }
         
     }

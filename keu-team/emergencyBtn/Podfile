@@ -10,5 +10,6 @@ target 'emergencyBtn' do
 pod ‘Firebase/Database’
 pod ‘Firebase/Auth’
 pod ‘SVProgressHUD’
+pod 'Alamofire'
 
 end
